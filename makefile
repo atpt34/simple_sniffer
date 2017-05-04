@@ -1,7 +1,7 @@
-main: main.o ds
-	gcc main.o red_black_tree.o stack.o misc.o data_structure.o -o main
-main.o: main.c
-	gcc -c main.c -Wall
+sniffd: sniffd.o ds
+	gcc sniffd.o red_black_tree.o stack.o misc.o data_structure.o -o sniffd
+sniffd.o: sniffd.c
+	gcc -c sniffd.c -Wall
 ds: red_blk
 	gcc -c data_structure.c
 red_blk: red_black_tree.c stack.c misc.c
@@ -11,4 +11,4 @@ cli: cli.o
 cli.o: cli.c
 	gcc -c cli.c -Wall
 clean:
-	rm *.o main cli
+	rm *.o sniffd cli

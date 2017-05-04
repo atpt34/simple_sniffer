@@ -3,7 +3,8 @@
 
 ipaddr_node * ipaddr_create(uint32_t inaddr) {
     ipaddr_node * node = (ipaddr_node*) malloc(sizeof(ipaddr_node));
-    struct sockaddr_in * sa = (struct sockaddr_in *) malloc (sizeof(struct sockaddr_in));
+    struct sockaddr_in * sa =
+     (struct sockaddr_in *) malloc (sizeof(struct sockaddr_in));
     (sa->sin_addr).s_addr = inaddr;
     node->ipaddr = sa;
     node->total_packets = 0;
@@ -24,26 +25,38 @@ void ipaddr_destroy(void* a) {
 }
 
 int ipaddr_compare(const void * a, const void * b) {
-    if( ((ipaddr_node*)a)->ipaddr->sin_addr.s_addr > ((ipaddr_node*)b)->ipaddr->sin_addr.s_addr) return 1;
-    if( ((ipaddr_node*)a)->ipaddr->sin_addr.s_addr < ((ipaddr_node*)b)->ipaddr->sin_addr.s_addr) return -1;
+    if( ((ipaddr_node*)a)->ipaddr->sin_addr.s_addr
+      > ((ipaddr_node*)b)->ipaddr->sin_addr.s_addr) return 1;
+    if( ((ipaddr_node*)a)->ipaddr->sin_addr.s_addr
+      < ((ipaddr_node*)b)->ipaddr->sin_addr.s_addr) return -1;
     return 0;
 }
 
 void ipaddr_print(void* a) {
     ipaddr_node* node = (ipaddr_node*) a;
-    printf ("%s\t%u\n", inet_ntoa(node->ipaddr->sin_addr), node->total_packets);
+    printf (LINE_FORMAT, inet_ntoa(node->ipaddr->sin_addr), node->total_packets);
 }
 
 void ipaddr_print_file(void* a, FILE* fp) {
     ipaddr_node* node = (ipaddr_node*) a;
-    fprintf (fp, "%s\t%u\n", inet_ntoa(node->ipaddr->sin_addr), node->total_packets);
+    fprintf (fp, LINE_FORMAT,
+     inet_ntoa(node->ipaddr->sin_addr), node->total_packets);
+}
+
+void ipaddr_print_buf(void* a, char* buf) {
+    char ipaddr_str[LINE_SIZE];
+    ipaddr_node* node = (ipaddr_node*) a;
+    sprintf(ipaddr_str, LINE_FORMAT,
+        inet_ntoa(node->ipaddr->sin_addr), node->total_packets);
+    strcat(buf, ipaddr_str);
 }
 
 void info_print(void *a) {;}
 void info_destroy(void *a) {;}
 
 ips_structure * ips_structure_create() {
-    rb_red_blk_tree* ds = RBTreeCreate(ipaddr_compare, ipaddr_destroy, info_destroy, ipaddr_print, ipaddr_print_file, info_print);
+    rb_red_blk_tree* ds = RBTreeCreate(ipaddr_compare, ipaddr_destroy, info_destroy,
+        ipaddr_print, ipaddr_print_file, ipaddr_print_buf, info_print);
     ips_structure* ips_ds = (ips_structure *) malloc(sizeof(ips_structure));
     ips_ds->actual_ds = ds;
     return ips_ds;
@@ -71,4 +84,8 @@ void ips_structure_destroy(ips_structure * ips_ds) {
 
 void ips_structure_persist(ips_structure* ips_ds, FILE * fstore) {
     RBTreePrintFile((rb_red_blk_tree*)(ips_ds->actual_ds), fstore);
+}
+
+void ips_structure_print_buf(ips_structure* ips_ds, char * buf) {
+    RBTreePrintBuf((rb_red_blk_tree*)(ips_ds->actual_ds), buf);
 }

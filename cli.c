@@ -4,27 +4,37 @@ void print_help_message();
 
 int main(int argc, char* argv[]) {
 
-    // kill -USR1 main.pid
-    // kill(pid, SIGUSR1);
-
     char * dfifo = DFIFO;
     char * cfifo = CFIFO;
     char char_buffer[BUFFER_SIZE];
     char command[BUFFER_SIZE];
 
-    /* open, read, and display the message from the FIFO */
-    //int fd = open(myfifo, O_RDONLY | O_NONBLOCK);
-    int fd = open(dfifo, O_RDONLY);
-    read(fd, char_buffer, BUFFER_SIZE);
-    printf("Received:\n%s\n", char_buffer);
+    FILE* fp = fopen(PIDFILE, "r");
+    if (fp == NULL) {
+        printf("Can't open file");
+        exit(EXIT_FAILURE);
+    }
+    if (!fgets(char_buffer, BUFFER_SIZE, fp)) {
+        printf("Can't read file");
+        exit(EXIT_FAILURE);
+    }
+    fclose(fp);
     int dpid = atoi(char_buffer);
     printf("Daemon pid is %d\n", dpid);
-
+    kill(dpid, SIGUSR1);
+    sleep(TIMEOUT - 1);
+    /* open, read, and display the message from the FIFO */
+    int fd = open(dfifo, O_RDONLY);
+    memset(char_buffer, 0, BUFFER_SIZE);
+    read(fd, char_buffer, BUFFER_SIZE);
+    printf("Received:\n%s\n", char_buffer);
 
     mkfifo(cfifo, 0666);
     printf("cfifo created!\n");
+    sleep(TIMEOUT - 1);
     int fc = open(cfifo, O_WRONLY);
     printf("cfifo opened!\n");
+
     write(fc, char_buffer, BUFFER_SIZE);
 
     print_help_message();
@@ -48,9 +58,7 @@ int main(int argc, char* argv[]) {
             sprintf(char_buffer, "%d", SHOW_IP);
             write(fc, char_buffer, BUFFER_SIZE);
             printf("Enter ip address:\n");
-            memset(char_buffer, 0, BUFFER_SIZE);
-            read(fd, char_buffer, BUFFER_SIZE);
-            printf("%s\n", char_buffer);
+            printf(MSG_IP);
             fgets(command, sizeof(command), stdin);
             write(fc, command, BUFFER_SIZE);
             memset(char_buffer, 0, BUFFER_SIZE);
@@ -92,7 +100,7 @@ int main(int argc, char* argv[]) {
         }
         sleep(TIMEOUT);
     }
-//    sleep(5);
+
     close(fd);
     close(fc);
     printf("closed cfifo\n");

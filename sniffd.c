@@ -1,6 +1,6 @@
 /*
 
-    juni task packet sniffer
+    juni task packet sniffer.
 
 */
 
@@ -9,41 +9,25 @@
 
 volatile sig_atomic_t stop = 0;
 
+static void daemonize();
 void sig_handler(int signum);
 int create_socket(const char * device_name);
 FILE* create_logfile(const char* file_name);
-void reset_packet(struct sockaddr_in* src, struct sockaddr_in* dest, uint32_t saddr, uint32_t daddr);
+void reset_addresses(struct sockaddr_in* src, struct sockaddr_in* dest, uint32_t saddr, uint32_t daddr);
 void print_help_message();
 
 int main (int argc, char *argv[]) {
+
+    daemonize();
 
     if (signal(SIGUSR1, sig_handler) == SIG_ERR) { // to make such signal
 		perror ("\ncan't catch SIGUSR1\n");
     }
 
-    int pid = getpid();
-    printf ("getpid(): %d\n", pid);
-
     char char_buffer[BUFFER_SIZE];
-    memset(char_buffer, 0, BUFFER_SIZE);
-    sprintf(char_buffer, "%d", pid);
     char * dfifo = DFIFO;
-
-    mkfifo(dfifo, 0666);
-    printf("dfifo created!\n");
-
-    int fd = open(dfifo, O_WRONLY);
-    printf("dfifo opened!\n");
-
-    write(fd, char_buffer, BUFFER_SIZE);
-    printf("written in dfifo\n");
-    sleep(TIMEOUT);
-
     char * cfifo = CFIFO;
-    int fc = open(cfifo, O_RDONLY);
-    memset(char_buffer, 0, BUFFER_SIZE);
-    read(fc, char_buffer, BUFFER_SIZE);
-    printf("Received:\n%s\n", char_buffer);
+    int fd, fc;
 
     // take name of network interface device
     printf("Starting...\n");
@@ -86,54 +70,37 @@ int main (int argc, char *argv[]) {
         exit (EXIT_FAILURE);
     }
 
-
-    //memset(char_buffer, 0, BUFFER_SIZE); // redirect stdout
-    //freopen("/dev/null", "a", stdout);
-    //setbuf(stdout, char_buffer);
-
     //struct sockaddr saddr;
     struct sockaddr_in source, dest;
     ipaddr_node * ex_node;
 
-    int choice = -1;
+    int new_conn = 0;
+    int choice = START;
     //for(;;) {
-    while(choice != STOP) {
-
-        //print_help_message();
-
-        //scanf("%d", &choice);
-        memset(char_buffer, 0, BUFFER_SIZE);
-        read(fc, char_buffer, BUFFER_SIZE);
-        choice = atoi(char_buffer);
-        //printf ("choice = %d\n", choice);
-
+    do {
         switch (choice) {
             case STAT:
                 memset(char_buffer, 0, BUFFER_SIZE);
-                ips_structure_print(ips);
+                ips_structure_print_buf(ips, char_buffer);
                 write(fd, char_buffer, BUFFER_SIZE);
                 break;
             case SHOW_IP: {
-                //char line[20];
-                //printf ("Enter ip (e.g. 127.0.0.1): ");
-                sprintf(char_buffer, MSG_IP);
-                write(fd, char_buffer, BUFFER_SIZE);
                 memset(char_buffer, 0, BUFFER_SIZE);
                 read(fc, char_buffer, BUFFER_SIZE);
-                //sscanf(line, "%19[^\n]", char_buffer);
                 ipaddr_node * node = ipaddr_create(inet_addr(char_buffer));
                 if ( (ex_node = ips_structure_query(ips, node)) != NULL ) {
                     memset(char_buffer, 0, BUFFER_SIZE);
-                    ipaddr_print(ex_node);
+                    //ipaddr_print(ex_node);
+                    ipaddr_print_buf(ex_node, char_buffer);
                     write(fd, char_buffer, BUFFER_SIZE);
                 } else {
-                    //printf("%s - no such ip occured\n", line);
                     sprintf(char_buffer, INVALID_IP);
                     write(fd, char_buffer, BUFFER_SIZE);
                 }
             }
                 break;
             case SELECT_IFACE:
+                //TODO interface for sniffing
                 break;
             case HELP:
                 //print_help_message();
@@ -150,15 +117,12 @@ int main (int argc, char *argv[]) {
                         exit (EXIT_FAILURE);
                     }
                     struct iphdr *iph = (struct iphdr *)(buffer  + sizeof(struct ethhdr) );
-                    reset_packet(&source, &dest, iph->saddr, iph->daddr);
-                    // memset (&source, 0, sizeof(source));
-                    // source.sin_addr.s_addr = iph->saddr;
-                    // memset (&dest, 0, sizeof(dest));
-                    // dest.sin_addr.s_addr = iph->daddr;
+                    reset_addresses(&source, &dest, iph->saddr, iph->daddr);
                     ipaddr_node * node = ipaddr_create(iph->daddr);
                     //printf("node = %p\n", node);
                     if ( (ex_node = ips_structure_query(ips, node)) != NULL ) {
                         ipaddr_increment_total_packets(ex_node);
+                        //ipaddr_destroy(node);
                     } else {
                         ips_structure_insert(ips, node);
                         ipaddr_increment_total_packets(node);
@@ -169,18 +133,33 @@ int main (int argc, char *argv[]) {
             default:
                 break;
             }
-    }
+
+            if (!new_conn)  {
+                mkfifo(dfifo, 0666);
+                printf("dfifo created!\n");
+                fd = open(dfifo, O_WRONLY);
+                printf("dfifo opened!\n");
+                sprintf(char_buffer, "hello world!");
+                write(fd, char_buffer, BUFFER_SIZE);
+                printf("written in dfifo\n");
+                sleep(TIMEOUT);
+                fc = open(cfifo, O_RDONLY);
+                memset(char_buffer, 0, BUFFER_SIZE);
+                read(fc, char_buffer, BUFFER_SIZE);
+                printf("Received:\n%s\n", char_buffer);
+                new_conn = 1;
+
+            }
+
+            memset(char_buffer, 0, BUFFER_SIZE);
+            read(fc, char_buffer, BUFFER_SIZE);
+            choice = atoi(char_buffer);
+            //printf ("choice = %d\n", choice);
+
+    } while (choice != STOP);
 
     //ips_structure_print(ips);
     ips_structure_persist(ips, logfile);
-    //fflush(stdout);
-
-    //char * msg = "Hello, World!";
-    //sprintf(char_buffer, msg);
-    //printf("char_buffer is %s\n", char_buffer);
-    //write(fd, char_buffer, BUFFER_SIZE);
-    //printf("written in fifo\n");
-
     ips_structure_destroy(ips);
     free(buffer);
     close (sock_raw);
@@ -216,7 +195,7 @@ FILE* create_logfile(const char* file_name) {
     return fp;
 }
 
-void reset_packet(struct sockaddr_in* src, struct sockaddr_in* dest,
+void reset_addresses(struct sockaddr_in* src, struct sockaddr_in* dest,
      uint32_t saddr, uint32_t daddr) {
     memset (src, 0, sizeof(struct sockaddr_in));
     src->sin_addr.s_addr = saddr;
@@ -224,17 +203,74 @@ void reset_packet(struct sockaddr_in* src, struct sockaddr_in* dest,
     dest->sin_addr.s_addr = daddr;
 }
 
-void print_help_message() {
-    printf ("You have fallowing options to continue:\n");
-    printf ("%d to start sniffing\n", START);
-    printf ("%d to stop\n", STOP);
-    printf ("%d to continue\n", CONT);
-    printf ("%d to see all stats\n", STAT);
-    printf ("%d to see given ip stats\n", SHOW_IP);
-    printf ("%d to select interface\n", SELECT_IFACE);
-    printf ("%d to print help message\n", HELP);
-}
-
 void sig_handler(int signum) {
     stop = 1;
+}
+
+static void daemonize()  {
+    pid_t pid;
+
+    /* Fork off the parent process */
+    pid = fork();
+
+    /* An error occurred */
+    if (pid < 0)
+        exit(EXIT_FAILURE);
+
+    /* Success: Let the parent terminate */
+    if (pid > 0)
+        exit(EXIT_SUCCESS);
+
+    /* On success: The child process becomes session leader */
+    if (setsid() < 0)
+        exit(EXIT_FAILURE);
+
+    /* Catch, ignore and handle signals */
+    //TODO: Implement a working signal handler */
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
+
+    /* Fork off for the second time*/
+    pid = fork();
+
+    /* An error occurred */
+    if (pid < 0)
+        exit(EXIT_FAILURE);
+
+    /* Success: Let the parent terminate */
+    if (pid > 0)
+        exit(EXIT_SUCCESS);
+
+    /* Set new file permissions */
+    umask(0);
+
+    /* Change the working directory to the root directory */
+    /* or another appropriated directory */
+    chdir(RUN_DIR);
+
+    /* Close all open file descriptors */
+    int x;
+    for (x = sysconf(_SC_OPEN_MAX); x>=0; x--) {
+        close (x);
+    }
+
+
+    /* Ensure only one copy */
+    int pidFilehandle = open(PIDFILE, O_RDWR|O_CREAT, 0600);
+    if (pidFilehandle == -1 ) {
+        /* Couldn't open lock file */
+        exit(EXIT_FAILURE);
+    }
+    /* Try to lock file */
+    if (lockf(pidFilehandle,F_TLOCK,0) == -1) {
+        /* Couldn't get lock on lock file */
+        exit(EXIT_FAILURE);
+    }
+
+    char str[32];
+    /* Get and format PID */
+    sprintf(str,"%d\n", getpid());
+    /* write pid to lockfile */
+    write(pidFilehandle, str, strlen(str));
+    //write(pidFilehandle, &getpid(), sizeof(int));
 }

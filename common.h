@@ -24,10 +24,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define DAEMON_NAME "sniffd"
 #define DEFAULT_IFACE "eth0"
 #define BUFFER_SIZE 1024
+#define LINE_SIZE 32
+#define LINE_FORMAT "%s\t%u\n"
 #define TIMEOUT 2
-#define LOGFILE "log.txt"
+#define RUN_DIR "/tmp/"
+#define LOGFILE "/tmp/log.txt"
+#define PIDFILE "/tmp/sniffd.pid"
 #define DFIFO "/tmp/sniff_dfifo"
 #define CFIFO "/tmp/sniff_cfifo"
 

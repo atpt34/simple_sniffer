@@ -25,6 +25,7 @@ rb_red_blk_tree* RBTreeCreate( int (*CompFunc) (const void*,const void*),
 			      void (*InfoDestFunc) (void*),
 			      void (*PrintFunc) (const void*),
                   void (*PrintFile) (const void*, FILE*),
+                  void (*PrintBuf) (const void*, char*),
 			      void (*PrintInfo)(void*)) {
   rb_red_blk_tree* newTree;
   rb_red_blk_node* temp;
@@ -34,6 +35,7 @@ rb_red_blk_tree* RBTreeCreate( int (*CompFunc) (const void*,const void*),
   newTree->DestroyKey= DestFunc;
   newTree->PrintKey= PrintFunc;
   newTree->PrintKeyFile = PrintFile;
+  newTree->PrintKeyBuf = PrintBuf;
   newTree->PrintInfo= PrintInfo;
   newTree->DestroyInfo= InfoDestFunc;
 
@@ -396,6 +398,16 @@ void InorderTreePrintFile(rb_red_blk_tree* tree, rb_red_blk_node* x, FILE* fp) {
     }
 }
 
+void InorderTreePrintBuf(rb_red_blk_tree* tree, rb_red_blk_node* x, char* buf) {
+    rb_red_blk_node* nil=tree->nil;
+    rb_red_blk_node* root=tree->root;
+    if (x != tree->nil) {
+      InorderTreePrintBuf(tree, x->left, buf);
+      tree->PrintKeyBuf(x->key, buf);
+      InorderTreePrintBuf(tree, x->right, buf);
+    }
+}
+
 /***********************************************************************/
 /*  FUNCTION:  TreeDestHelper */
 /**/
@@ -466,6 +478,9 @@ void RBTreePrintFile(rb_red_blk_tree* tree, FILE* fp) {
     InorderTreePrintFile(tree, tree->root->left, fp);
 }
 
+void RBTreePrintBuf(rb_red_blk_tree* tree, char* buf) {
+    InorderTreePrintBuf(tree, tree->root->left, buf);
+}
 
 /***********************************************************************/
 /*  FUNCTION:  RBExactQuery */
