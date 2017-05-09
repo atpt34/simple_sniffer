@@ -1,6 +1,22 @@
+/*
+    Command line interface to sniffer daemon.
+
+    Opens communication to sniffer daemon program by
+    reading PIDFILE with daemon pid, then verifies
+    if daemon is running, if not starts the daemon.
+    After establishing connection with pipes it
+    read following user commands:
+    start, continue - start sniffing;
+    stop            - stop sniffing;
+    stat            - prints ip packets statistic;
+    show            - prints given ip number of packets;
+    select          - select new interface for sniffing;
+    help            - prints help message;
+    exit            - terminates cli & sniffer daemon;
+ */
 #include "common.h"
 
-void print_help_message();
+static void print_help_message();
 
 int main(int argc, char* argv[]) {
 
@@ -9,33 +25,54 @@ int main(int argc, char* argv[]) {
     char char_buffer[BUFFER_SIZE];
     char command[BUFFER_SIZE];
 
+    // Try to get file with pid of the running daemon.
     FILE* fp = fopen(PIDFILE, "r");
     if (fp == NULL) {
-        printf("Can't open file");
+        printf("Can't open pidfile\n");
         exit(EXIT_FAILURE);
     }
     if (!fgets(char_buffer, BUFFER_SIZE, fp)) {
-        printf("Can't read file");
+        printf("Can't read pidfile\n");
         exit(EXIT_FAILURE);
     }
     fclose(fp);
     int dpid = atoi(char_buffer);
-    printf("Daemon pid is %d\n", dpid);
-    kill(dpid, SIGUSR1);
-    sleep(TIMEOUT - 1);
-    /* open, read, and display the message from the FIFO */
-    int fd = open(dfifo, O_RDONLY);
-    memset(char_buffer, 0, BUFFER_SIZE);
-    read(fd, char_buffer, BUFFER_SIZE);
-    printf("Received:\n%s\n", char_buffer);
+    printf("PIDFILE data %d\n", dpid);
 
+    // check first if daemon is working
+    //    if not start the daemon
+    //    else continue
+    if (kill(dpid, 0) == 0) {
+        printf ("Process is running(maybe not sniffd!) or a zombie!\n");
+    } else if (errno == ESRCH) {
+        printf ("No such process with the given id is running! Starting sniffer!\n");
+        // start sniffer daemon
+        char *argsv[] = {DAEMON_NAME, NULL};
+        execv (DAEMON_NAME, argsv);
+        perror ("execv() failed");
+        printf ("%s started!\n", DAEMON_NAME);
+        exit(EXIT_FAILURE);
+    } else {
+        printf ("Some other error... use perror() or strerror(errno) to report");
+        exit(EXIT_FAILURE);
+    }
+
+    kill(dpid, SIGUSR1);  // notify daemon
     mkfifo(cfifo, 0666);
-    printf("cfifo created!\n");
-    sleep(TIMEOUT - 1);
+    //printf("cfifo created!\n");
+
+    //sleep(TIMEOUT);
+    int fd = open(dfifo, O_RDONLY);
+    printf("dfifo opened!\n");
+
+
+    //read(fd, char_buffer, BUFFER_SIZE);
+    //printf("Received:\n%s\n", char_buffer);
+
+    //sleep(TIMEOUT - 1);
     int fc = open(cfifo, O_WRONLY);
     printf("cfifo opened!\n");
-
-    write(fc, char_buffer, BUFFER_SIZE);
+    //write(fc, char_buffer, BUFFER_SIZE);
 
     print_help_message();
 
@@ -61,21 +98,25 @@ int main(int argc, char* argv[]) {
             printf(MSG_IP);
             fgets(command, sizeof(command), stdin);
             write(fc, command, BUFFER_SIZE);
-            memset(char_buffer, 0, BUFFER_SIZE);
             read(fd, char_buffer, BUFFER_SIZE);
             printf("%s\n", char_buffer);
         }
         else if (!strncmp(command, MSG_SELECT_IFACE, strlen(MSG_SELECT_IFACE))) {
+            memset(char_buffer, 0, BUFFER_SIZE);
             sprintf(char_buffer, "%d", SELECT_IFACE);
             write(fc, char_buffer, BUFFER_SIZE);
-            printf("Enter interface name:\n");
+            printf("Enter interface name(e.g. eth0): ");
+            fgets(command, sizeof(command), stdin);
+            write(fc, command, BUFFER_SIZE);
+            read(fd, char_buffer, BUFFER_SIZE);
+            printf("%s\n", char_buffer);
         }
         else if (!strncmp(command, MSG_STAT, strlen(MSG_STAT))) {
             printf("Current IP stats\n");
             memset(char_buffer, 0, BUFFER_SIZE);
             sprintf(char_buffer, "%d", STAT);
             write(fc, char_buffer, BUFFER_SIZE);
-            memset(char_buffer, 0, BUFFER_SIZE);
+            //memset(char_buffer, 0, BUFFER_SIZE);
             read(fd, char_buffer, BUFFER_SIZE);
             printf("%s\n", char_buffer);
         }
@@ -92,7 +133,7 @@ int main(int argc, char* argv[]) {
         else if (!strncmp(command, MSG_EXIT, strlen(MSG_EXIT))) {
             printf ("Goodbye!\n");
             kill(dpid, SIGUSR1);
-            sprintf(char_buffer, "%d", STOP);
+            sprintf(char_buffer, "%d", STOP);  // START
             write(fc, char_buffer, BUFFER_SIZE);
             break; //break infinite loop
         } else {
@@ -101,6 +142,7 @@ int main(int argc, char* argv[]) {
         sleep(TIMEOUT);
     }
 
+    // clean up
     close(fd);
     close(fc);
     printf("closed cfifo\n");
@@ -108,6 +150,7 @@ int main(int argc, char* argv[]) {
 	exit(EXIT_SUCCESS);
 }
 
+// Prints available cli user commands.
 void print_help_message() {
     printf ("You have fallowing options:\n");
     printf ("%s - to start sniffing\n", MSG_START);

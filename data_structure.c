@@ -1,3 +1,9 @@
+/*
+    Implementation of data structure interface,
+    using red-black tree, taken from
+    http://web.mit.edu/~emin/Desktop/ref_to_emin/www.old/source_code/red_black_tree/index.html
+ */
+
 #include "data_structure.h"
 #include "red_black_tree.h"
 
@@ -15,6 +21,7 @@ void ipaddr_increment_total_packets(ipaddr_node * node) {
     node->total_packets++;
 }
 
+// Sets ippaddr_node packets counter to the given value.
 void ipaddr_set_total_packets(ipaddr_node * node, int value) {
     node->total_packets = value;
 }
@@ -24,6 +31,7 @@ void ipaddr_destroy(void* a) {
     free((ipaddr_node*)a);
 }
 
+// Compares to ipaddr_nodes according to their ip addresses.
 int ipaddr_compare(const void * a, const void * b) {
     if( ((ipaddr_node*)a)->ipaddr->sin_addr.s_addr
       > ((ipaddr_node*)b)->ipaddr->sin_addr.s_addr) return 1;
@@ -51,6 +59,7 @@ void ipaddr_print_buf(void* a, char* buf) {
     strcat(buf, ipaddr_str);
 }
 
+// Additional functions neccessary for rb_red_blk_tree.
 void info_print(void *a) {;}
 void info_destroy(void *a) {;}
 
@@ -62,10 +71,8 @@ ips_structure * ips_structure_create() {
     return ips_ds;
 }
 ipaddr_node * ips_structure_query(ips_structure* ips_ds, ipaddr_node * node) {
-    //return (ipaddr_node *) (RBExactQuery(ips_ds->actual_ds, node)->key);
     rb_red_blk_node* ex_node;
     if ( (ex_node = RBExactQuery((rb_red_blk_tree*)(ips_ds->actual_ds), node)) ) {
-    //if ( (ex_node = RBExactQuery(ips_ds->actual_ds, node)) ) {
         return (ipaddr_node*) (ex_node->key);
     } else {
         return NULL;

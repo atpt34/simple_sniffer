@@ -24,36 +24,42 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define DAEMON_NAME "sniffd"
+#define DAEMON_NAME   "sniffd"
 #define DEFAULT_IFACE "eth0"
-#define BUFFER_SIZE 1024
-#define LINE_SIZE 32
-#define LINE_FORMAT "%s\t%u\n"
-#define TIMEOUT 2
-#define RUN_DIR "/tmp/"
-#define LOGFILE "/tmp/log.txt"
-#define PIDFILE "/tmp/sniffd.pid"
-#define DFIFO "/tmp/sniff_dfifo"
-#define CFIFO "/tmp/sniff_cfifo"
+#define BUFFER_SIZE   2048
+#define LINE_SIZE     32
+#define LINE_FORMAT   "%s\t%u\n"
 
-#define START 0
-#define STOP 1
-#define CONT 2
-#define SHOW_IP 3
-#define SELECT_IFACE 4
-#define STAT 5
-#define HELP 6
+#define TIMEOUT       2
 
-#define MSG_START "start"
-#define MSG_STOP "stop"
-#define MSG_CONT "cont"
-#define MSG_SHOW_IP "show"
+#define RUN_DIR       "/tmp/"
+#define LOGFILE       "/tmp/log.txt"
+#define PIDFILE       "/tmp/sniffd.pid"
+#define DFIFO         "/tmp/sniff_dfifo"
+#define CFIFO         "/tmp/sniff_cfifo"
+
+#define TRUE          1
+#define FALSE         0
+
+#define START         0
+#define STOP          1
+#define CONT          2
+#define SHOW_IP       3
+#define SELECT_IFACE  4
+#define STAT          5
+#define HELP          6
+
+#define MSG_START     "start"
+#define MSG_STOP      "stop"
+#define MSG_CONT      "cont"
+#define MSG_SHOW_IP   "show"
 #define MSG_SELECT_IFACE "select"
-#define MSG_STAT "stat"
-#define MSG_HELP "help"
-#define MSG_EXIT "exit"
-#define MSG_IP "Enter ip (e.g. 127.0.0.1): "
-#define INVALID_IP "No such ip!\n"
-
+#define MSG_STAT      "stat"
+#define MSG_HELP      "help"
+#define MSG_EXIT      "exit"
+#define MSG_IP        "Enter ip (e.g. 127.0.0.1): "
+#define INVALID_IP    "No such ip!\n"
+#define VALID_IFACE   "Interface changed!\n"
+#define INVALID_IFACE "Can't create socket for this interface!\n"
 
 #endif /* #ifndef COMMON_H_ */

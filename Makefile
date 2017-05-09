@@ -1,3 +1,5 @@
+# bad Makefile!
+
 sniffd: sniffd.o ds
 	gcc sniffd.o red_black_tree.o stack.o misc.o data_structure.o -o sniffd
 sniffd.o: sniffd.c
@@ -10,5 +12,8 @@ cli: cli.o
 	gcc cli.o -o cli
 cli.o: cli.c
 	gcc -c cli.c -Wall
+strip:
+	strip $(EXE)
 clean:
 	rm *.o sniffd cli
+all: sniffd cli
