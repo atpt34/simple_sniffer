@@ -1,19 +1,31 @@
-# bad Makefile!
+# 
+PROG_NAME := sniffd
+PROG_SRCS := sniffd.c data_structure.c red_black_tree.c misc.c stack.c
+# PROG_SRCS := $(wildcard *.c)
+PROG_OBJS := ${PROG_SRCS:.c=.o}
+CLI_NAME := cli
+CLI_SRCS := cli.c
+CLI_OBJS := ${CLI_SRCS:.c=.o}
+PROG_INCLUDE_DIRS := .
+PROG_LIBRARY_DIRS :=
+PROG_LIBRARIES :=
 
-sniffd: sniffd.o ds
-	gcc sniffd.o red_black_tree.o stack.o misc.o data_structure.o -o sniffd
-sniffd.o: sniffd.c
-	gcc -c sniffd.c -Wall
-ds: red_blk
-	gcc -c data_structure.c
-red_blk: red_black_tree.c stack.c misc.c
-	gcc -c red_black_tree.c stack.c misc.c
-cli: cli.o
-	gcc cli.o -o cli
-cli.o: cli.c
-	gcc -c cli.c -Wall
-strip:
-	strip $(EXE)
+CFLAGS += $(foreach includedir, $(PROG_INCLUDE_DIRS), -I$(includedir))
+LDFLAGS += $(foreach librarydir, $(PROG_LIBRARY_DIRS), -L$(libarydir))
+LDFLAGS += $(foreach libarary, $(PROG_LIBRARIES), -l$(library))
+
+.PHONY: all clean distclean PROG_NAME CLI_NAME
+
+all: $(PROG_NAME) $(CLI_NAME)
+
+$(PROG_NAME): $(PROG_OBJS)
+	$(CC) $(PROG_OBJS) -o $(PROG_NAME)
+
+$(CLI_NAME): $(CLI_OBJS)
+	$(CC) $(CLI_OBJS) -o $(CLI_NAME)
+
 clean:
-	rm *.o sniffd cli
-all: sniffd cli
+	@- $(RM) $(PROG_NAME)
+	@- $(RM) $(PROG_OBJS)
+
+distclean: clean
