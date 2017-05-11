@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
     int fd = open(dfifo, O_RDONLY);
     printf("dfifo opened!\n");
 
-
+    // race condition has gone!
     //read(fd, char_buffer, BUFFER_SIZE);
     //printf("Received:\n%s\n", char_buffer);
 
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
     close(fc);
     printf("closed cfifo\n");
     unlink(cfifo);
-	exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 }
 
 // Prints available cli user commands.

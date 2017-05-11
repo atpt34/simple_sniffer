@@ -12,5 +12,5 @@
 
 ### Run:
 
-    sudo ./sniffd <interface>  - start daemon independently.
+    sudo ./sniffd [interface]  - start daemon independently.
     sudo ./cli                 - start cli.

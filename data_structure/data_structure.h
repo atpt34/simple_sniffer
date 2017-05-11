@@ -1,7 +1,7 @@
 /*
     Data structure interface to store IP address data.
  */
-#include "common.h"
+#include "../common.h"
 
 // Struct to hold IP address and packets counter.
 typedef struct ipaddr_node {

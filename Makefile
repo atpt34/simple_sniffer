@@ -1,6 +1,7 @@
 # 
 PROG_NAME := sniffd
-PROG_SRCS := sniffd.c data_structure.c red_black_tree.c misc.c stack.c
+DS_DIR := data_strucuture/
+PROG_SRCS := sniffd.c $(wildcard data_structure/*.c)
 # PROG_SRCS := $(wildcard *.c)
 PROG_OBJS := ${PROG_SRCS:.c=.o}
 CLI_NAME := cli
@@ -27,5 +28,8 @@ $(CLI_NAME): $(CLI_OBJS)
 clean:
 	@- $(RM) $(PROG_NAME)
 	@- $(RM) $(PROG_OBJS)
+	@- $(RM) $(DS_DIR)*.o
+	@- $(RM) $(CLI_NAME)
+	@- $(RM) $(CLI_OBJS)
 
 distclean: clean

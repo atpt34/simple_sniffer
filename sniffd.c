@@ -15,7 +15,7 @@
  */
 
 #include "common.h"
-#include "data_structure.h"
+#include "data_structure/data_structure.h"
 
 // Variable to stop sniff loop.
 static volatile sig_atomic_t stop = FALSE;
